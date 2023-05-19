@@ -4,7 +4,9 @@ const Wishlist = require("../models/Wishlist");
 const Review = require("../models/Review");
 const Product = require("../models/Product");
 const Payment = require("../models/Payment");
-const Order = require("../models/Order")
+const Order = require("../models/Order");
+const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
 let success = false;
 const getAllUsersInfo = async (req, res) => {
     try {
@@ -85,6 +87,48 @@ const getUserReview = async (req, res) => {
         res.status(400).send("User Not Found")
     }
 
+}
+
+const adminAddUser = async (req, res) => {
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+
+    //     return res.status(400).json({ error: errors.array() })
+    // }
+    const { firstName, lastName, email, phoneNumber, password, isAdmin } = req.body
+
+    try {
+        let user = await User.findOne({ $or: [{ email: email }, { phoneNumber: phoneNumber }] });
+        if (user) {
+            return res.status(400).send({ error: "Sorry a user already exists" })
+        }
+
+        // password hashing
+        const salt = await bcrypt.genSalt(10)
+        const secPass = await bcrypt.hash(password, salt)
+
+        // create a new user
+        user = await User.create({
+            firstName,
+            lastName,
+            email,
+            phoneNumber,
+            password: secPass,
+            isAdmin
+        });
+        const data = {
+            user: {
+                id: user._id
+            }
+        };
+        success = true
+        const authToken = jwt.sign(data, process.env.JWT_SECRET)
+        res.send({ success, msg: "Registered User", authToken })
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).send("Internal server error")
+    }
 }
 
 const deleteUserReview = async (req, res) => {
@@ -208,7 +252,7 @@ const deleteProduct = async (req, res) => {
 module.exports = {
     getAllUsersInfo, getSingleUserInfo,
     getUserCart, getUserWishlist,
-    getUserReview, deleteUserReview,
+    getUserReview, adminAddUser, deleteUserReview,
     deleteUserCartItem, deleteUserWishlistItem,
     updateProductDetails, userPaymentDetails, addProduct, deleteProduct
 }

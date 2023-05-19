@@ -19,7 +19,6 @@ router.post('/register', [
     body('password', 'Password must be at least 5 characters').isLength({ min: 5 }),
     body('phoneNumber', 'Enter a valid phone number').isLength({ min: 10, max: 10 })
 ], async (req, res) => {
-    res.c
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
 
